@@ -3,7 +3,8 @@
 A Crafting App that has no catalogs yet may start from AI-assisted first catalogs, written from the
 plain meaning of the English (the clean-room rule) and recorded in `ATTRIBUTION.md`. Their rows are
 Drafts: the app shows them, but no Reviewer has accepted them. We list each catalog's Drafts in a
-separate file beside the catalogs that no app reads. The Weblate converter marks those rows "Needs
+separate file that no app reads: `drafts/<locale>/<app>.tsv`, outside `locales/`, one row per Draft
+with the catalog row's source text and context, the two columns that identify it. The Weblate converter marks those rows "Needs
 editing", and a Reviewer's acceptance takes a row off the list. The TSV format, the craft-libs
 parser and every app's runtime pin stay as they are.
 
@@ -18,6 +19,6 @@ parser and every app's runtime pin stay as they are.
 
 ## Consequences
 
-- The converter and the checker read the Draft lists; the checker fails a list entry whose row is
-  missing from its catalog.
+- The converter and the checker are to read the Draft lists (a later change; neither does yet);
+  the checker will fail a list entry whose row is missing from its catalog.
 - AI rows already in catalogs before this decision are not listed as Drafts.
