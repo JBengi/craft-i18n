@@ -71,7 +71,10 @@ fn draft_list_entry_needs_its_catalog_row() {
         &[
             ("locales/fr/common.tsv", &common),
             ("locales/fr/anicraft.tsv", &app),
-            ("drafts/fr/common.tsv", "# Drafts\n\tSave\n\tOpen\n\tSave\n"),
+            (
+                "drafts/fr/common.tsv",
+                "# Drafts\n\tSave\n\tOpen\n\tSave\n@id\tlanguage.name\n",
+            ),
             ("drafts/fr/anicraft.tsv", "\tPlay\n\tSave\n"),
             ("drafts/fr/cadcraft.tsv", "\tPlay\n"),
         ],
@@ -80,6 +83,7 @@ fn draft_list_entry_needs_its_catalog_row() {
             "drafts/fr/cadcraft.tsv: line 1: no such row",
             "drafts/fr/common.tsv: line 3: no such row",
             "drafts/fr/common.tsv: line 4: listed twice",
+            "drafts/fr/common.tsv: line 5: an @id row",
         ],
     );
 }

@@ -153,6 +153,9 @@ fn draft_problems(root: &Path, catalogs: &BTreeMap<String, Locale>) -> Vec<Strin
                     Ok(key) if !rows.is_some_and(|rows| rows.contains_key(&key)) => {
                         Some(format!("no such row in locales/{locale}/{file}"))
                     }
+                    Ok(key) if key.0 == "@id" => Some(
+                        "an @id row; Weblate doesn't offer it, so it can't be accepted there".into(),
+                    ),
                     Ok(key) if file != COMMON && shared.contains(&key) => Some(
                         "an override of a shared string; Weblate doesn't offer it, so it can't be accepted there"
                             .into(),
