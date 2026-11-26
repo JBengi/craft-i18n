@@ -230,8 +230,9 @@ def po_values(path, nplurals, problems, fuzzy=None):
 
 def weblate_changes(po_dir, base_dir, root, problems):
     """({(component, locale): {key: (translation at the last export or None, Weblate's)}} for every
-    translation Weblate changed since the last export, {(component, locale): {key}} for every
-    entry exported fuzzy that Weblate now has non-fuzzy: an accepted Draft)."""
+    translation Weblate changed since the last export, {(component, locale): {key: Weblate's}} for
+    every entry exported fuzzy that Weblate now has non-fuzzy: an accepted Draft, with the wording
+    the Reviewer accepted)."""
     table = plural_table(root)
     out, accepted = {}, {}
     for component in COMPONENTS:
@@ -245,7 +246,7 @@ def weblate_changes(po_dir, base_dir, root, problems):
             if changed:
                 out[(component, locale)] = changed
             if was_fuzzy & now.keys():
-                accepted[(component, locale)] = was_fuzzy & now.keys()
+                accepted[(component, locale)] = {k: now[k] for k in was_fuzzy & now.keys()}
     return out, accepted
 
 
@@ -318,12 +319,14 @@ def export(po_dir, base_dir, root):
                                                                 for i in sorted(e["strs"])))
                    for e in existing if e["id"] != ""}
             body = ""
-            draft = listed.get((locale, component), set()) - accepted.get((component, locale), set())
+            draft = listed.get((locale, component), set())
+            ok = accepted.get((component, locale), {})
             for k in keys:
                 value = values.get(k, "")
                 was = old.get(k)
                 flags = was[0] if was and was[1] == value else set()
-                if k in draft:
+                # Fuzzy until a Reviewer accepted this very wording (main may have changed it since).
+                if k in draft and ok.get(k) != value:
                     flags = flags | {"fuzzy"}
                 body += "\n" + render_entry(k, value, n, flags)
             write_if_changed(path, header(component, locale, table) + body)
@@ -379,7 +382,7 @@ def edit_catalog(path, updates, name, locale, app):
 def edit_drafts(path, keys):
     """Take `keys` off a Draft list, changing only those lines."""
     lines = path.read_text(encoding="utf-8").split("\n")
-    kept = [l for l in lines if tuple(l.rstrip("\r").split("\t")) not in keys]
+    kept = [l for l in lines if tuple(l.lstrip("\ufeff").rstrip("\r").split("\t")) not in keys]
     path.write_text("\n".join(kept), encoding="utf-8", newline="\n")
 
 
@@ -391,7 +394,7 @@ def import_(po_dir, base_dir, root):
 
     cats = catalogs(root)
     shared = {k for (_, c), rows in cats.items() if c == "common" for k in rows}
-    listed = []
+    listed, applied = [], {}
     for (component, locale), rows in sorted(changes.items()):
         if not (root / "locales" / locale).is_dir():
             problems.append(f"{component}/{locale}.po: no such locale in locales/")
@@ -409,15 +412,17 @@ def import_(po_dir, base_dir, root):
                 continue
             updates[key] = value
             listed.append(change)
+        applied[(component, locale)] = updates
         if updates:
             path = root / "locales" / locale / f"{component}.tsv"
             edit_catalog(path, updates, language_name(root, locale), locale, COMPONENTS[component])
-    # An accepted Draft leaves its list, unless its row changed on main too (a conflict).
-    conflicts = {(c["component"], c["locale"], c["context"], c["source"]) for c in listed if c.get("conflict")}
+    # An accepted Draft leaves its list only if the catalog now holds the wording the Reviewer
+    # accepted: not if main changed the row since the export.
     listed_drafts = drafts(root)
-    for (component, locale), keys in sorted(accepted.items()):
-        keys = {k for k in keys & listed_drafts.get((locale, component), set())
-                if (component, locale, *k) not in conflicts}
+    for (component, locale), ok in sorted(accepted.items()):
+        final = cats.get((locale, component), {}) | applied.get((component, locale), {})
+        keys = {k for k, v in ok.items() if k in listed_drafts.get((locale, component), set())
+                and final.get(k) == v}
         if keys:
             edit_drafts(root / "drafts" / locale / f"{component}.tsv", keys)
             listed += [{"component": component, "locale": locale, "context": k[0], "source": k[1],

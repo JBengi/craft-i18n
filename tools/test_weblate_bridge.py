@@ -191,6 +191,24 @@ class Bridge(unittest.TestCase):
         self.assertIn("\tBold\tFettdruck\n", self.tsv("de", "wordcraft"))
         self.assertEqual(path.read_text(encoding="utf-8"), "")
 
+    def test_a_draft_main_rewords_after_acceptance_stays_listed(self):
+        path = self.drafts("\ufeff\tBold\n")
+        self.export()
+        self.set_po("wordcraft", "de", '#, fuzzy\nmsgid "Bold"', 'msgid "Bold"')
+        self.write("de", "wordcraft", ("", "Open", "Aufmachen"), ("", "Bold", "Halbfett"),
+                   ("@msg", "Couldn't open {name}: {e}", "{name} ließ sich nicht öffnen: {e}"))
+        self.assertEqual(wb.export(self.po, self.base, self.root), [])
+        self.assertIn('#, fuzzy\nmsgid "Bold"\nmsgstr "Halbfett"\n', self.po_file("wordcraft", "de"))
+        self.assertEqual(wb.import_(self.po, self.base, self.root)[0], [])
+        self.assertEqual(path.read_text(encoding="utf-8"), "\ufeff\tBold\n")
+
+    def test_an_accepted_draft_after_a_bom_leaves_the_list(self):
+        path = self.drafts("\ufeff\tBold\n")
+        self.export()
+        self.set_po("wordcraft", "de", '#, fuzzy\nmsgid "Bold"', 'msgid "Bold"')
+        self.assertEqual(wb.import_(self.po, self.base, self.root)[0], [])
+        self.assertEqual(path.read_text(encoding="utf-8"), "")
+
     def test_fuzzy_and_bad_plurals(self):
         self.export()
         self.set_po("common", "de", 'msgid "Open"\nmsgstr "Öffnen"', '#, fuzzy\nmsgid "Open"\nmsgstr "Auf"')

@@ -84,7 +84,10 @@ context <TAB> English source text  one row per Draft, written exactly as in the 
 - `#` lines and empty lines are ignored. Two columns, escaped as in the catalog.
 - CI fails a row that names no row of its catalog, or that is listed twice.
 - Weblate shows a listed row as "Needs editing". When a Reviewer accepts it, the next sync PR
-  takes it off the list (and changes its wording if the Reviewer did).
+  takes it off the list (and changes its wording if the Reviewer did). If the row changed on
+  `main` after the export, it stays listed, and Weblate shows the new wording as "Needs editing".
+- An app list names only that app's own rows, not an override of a shared string: Weblate offers
+  overrides nowhere, so they can't be accepted there.
 - Rows added before ADR 0007 are not listed.
 
 ## What an app shows
